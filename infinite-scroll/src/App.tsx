@@ -1,35 +1,66 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+
+type post = {
+  body: string;
+  id: number;
+  title: string;
+  userId: number;
+};
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData] = useState<post[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<boolean>(false);
+
+  const getData = async () => {
+    try {
+      setLoading(true);
+      fetch(`https://jsonplaceholder.typicode.com/posts?_limit=9&page=${page}`)
+        .then((response) => response.json())
+        .then((json: post[]) => {
+          console.log(json);
+          setData((prev) => [...prev, ...json]);
+        });
+      setLoading(false);
+    } catch (err) {
+      setLoading(false);
+      setError(true);
+      console.log(err);
+    }
+  };
+
+  const handleInfiniteScroll = () => {
+    if (
+      window.innerHeight + document.documentElement.scrollTop + 1 >=
+      document.documentElement.scrollHeight
+    ) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  useEffect(() => {
+    getData();
+  }, [page]);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleInfiniteScroll);
+    return () => {
+      window.removeEventListener("scroll", handleInfiniteScroll);
+    };
+  }, []);
 
   return (
-    <>
+    <div>
+      {error && <h4>error..</h4>}
       <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        {data.map((post, index) => (
+          <h4 key={index}>{post.title}</h4>
+        ))}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+      {loading && <h4>Loading ...</h4>}
+    </div>
+  );
 }
 
-export default App
+export default App;
